@@ -2,6 +2,10 @@ plugins {
     kotlin("jvm") version "2.0.21"
 }
 
+kotlin {
+    jvmToolchain(22)
+}
+
 group = "org.cserby"
 version = "1.0-SNAPSHOT"
 
