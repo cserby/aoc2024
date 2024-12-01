@@ -20,4 +20,10 @@ object Day1 {
         val distances = pairs.map{ (first, second) -> kotlin.math.abs(first - second) }
         return distances.sum()
     }
+
+    fun part2(input: String): Int {
+        val lists = parse(input)
+        val secondListCounts = lists.second.groupingBy { it }.eachCount()
+        return lists.first.fold(0) { acc, i -> acc + i * secondListCounts.getOrDefault(i, 0) }
+    }
 }
