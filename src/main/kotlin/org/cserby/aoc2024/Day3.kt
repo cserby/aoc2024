@@ -35,8 +35,7 @@ object Day3 {
     }
 
     fun part2(input: String): Int {
-        return input.lines()
-            .flatMap(Day3::findMulsWithDo)
+        return findMulsWithDo(input.lines().joinToString(""))
             .fold(0) { acc, pair -> acc + pair.first * pair.second }
     }
 }
