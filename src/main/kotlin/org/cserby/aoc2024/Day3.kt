@@ -16,7 +16,11 @@ object Day3 {
     }
 
     private fun findMulsWithDo(line: String): List<Pair<Int, Int>> {
-        tailrec fun findMulsWithDoRec(line: String, enabled: Boolean, acc: List<Pair<Int, Int>>): List<Pair<Int, Int>> {
+        tailrec fun findMulsWithDoRec(
+            line: String,
+            enabled: Boolean,
+            acc: List<Pair<Int, Int>>,
+        ): List<Pair<Int, Int>> {
             if (line == "") return acc
             if (enabled) {
                 val split = line.split("don't\\(\\)".toRegex(), 2)

@@ -1,9 +1,10 @@
-package org.cserby.aoc2024;
+package org.cserby.aoc2024
 
 object Day1 {
     private fun parse(input: String): Pair<List<Int>, List<Int>> {
-        val pairList = input.lines()
-            .map{ parseLine(it) }
+        val pairList =
+            input.lines()
+                .map { parseLine(it) }
         return pairList.map { it.first } to pairList.map { it.second }
     }
 
@@ -17,7 +18,7 @@ object Day1 {
         val firstList = lists.first.sorted()
         val secondList = lists.second.sorted()
         val pairs = firstList.zip(secondList)
-        val distances = pairs.map{ (first, second) -> kotlin.math.abs(first - second) }
+        val distances = pairs.map { (first, second) -> kotlin.math.abs(first - second) }
         return distances.sum()
     }
 

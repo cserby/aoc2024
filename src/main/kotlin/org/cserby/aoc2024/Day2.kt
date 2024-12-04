@@ -11,15 +11,18 @@ object Day2 {
         return line.split(" ").map(String::toInt)
     }
 
-    private fun checkDiff(meas1: Int, meas2: Int): Boolean {
+    private fun checkDiff(
+        meas1: Int,
+        meas2: Int,
+    ): Boolean {
         val diff = meas2 - meas1
         return diff >= 1 && diff <= 3
     }
 
     private fun isSafelyIncreasing(measurement: Measurement): Boolean {
         return measurement.zipWithNext().fold(true) {
-            safeSoFar, currentPair ->
-                safeSoFar && checkDiff(currentPair.first, currentPair.second)
+                safeSoFar, currentPair ->
+            safeSoFar && checkDiff(currentPair.first, currentPair.second)
         }
     }
 
@@ -31,7 +34,10 @@ object Day2 {
         return parse(input).count(Day2::isMeasurementSafe)
     }
 
-    private fun <T>removeIndex(list: List<T>, index: Int): List<T> {
+    private fun <T> removeIndex(
+        list: List<T>,
+        index: Int,
+    ): List<T> {
         return list.filterIndexed { idx, _ -> index != idx }
     }
 
