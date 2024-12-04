@@ -1,7 +1,8 @@
 package org.cserby.aoc2024.test
 
 import org.cserby.aoc2024.Day3
-import kotlin.test.*
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class Day3Test {
     @Test
