@@ -89,6 +89,20 @@ fun Matrix.countXmases(): Int {
     return xmases.sum()
 }
 
+private fun Matrix.isCrossMas(startX: Int, startY: Int): Boolean {
+    if(get(startX).get(startY) != 'A') return false
+    try {
+        return setOf(get(startX - 1).get(startY - 1), get(startX + 1).get(startY + 1)) == setOf('M', 'S')
+                && setOf(get(startX + 1).get(startY - 1), get(startX - 1).get(startY + 1)) == setOf('M', 'S')
+    } catch (_: IndexOutOfBoundsException) {
+        return false
+    }
+}
+
+fun Matrix.countCrossMases(): Int {
+    return allCells().map{ (currX, currY) -> if(isCrossMas(currX, currY)) 1 else 0 }.sum()
+}
+
 object Day4 {
     private fun parse(input: String): Matrix {
         return input.lines().map { it.toCharArray() }
@@ -97,5 +111,9 @@ object Day4 {
 
     fun part1(input: String): Int {
         return parse(input).countXmases()
+    }
+
+    fun part2(input: String): Int {
+        return parse(input).countCrossMases()
     }
 }
