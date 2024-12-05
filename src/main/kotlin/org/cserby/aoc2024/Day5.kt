@@ -12,7 +12,10 @@ class OrderingComparator(private val ordering: Ordering) : Comparator<Int> {
 
     From: https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-comparator/
      */
-    override fun compare(first: Int?, second: Int?): Int {
+    override fun compare(
+        first: Int?,
+        second: Int?,
+    ): Int {
         if (first == null) throw Exception("First is null")
         if (second == null) throw Exception("Second is null")
 
@@ -22,7 +25,7 @@ class OrderingComparator(private val ordering: Ordering) : Comparator<Int> {
     }
 }
 
-private fun Update.orderWith(ordering: Ordering): Update {
+fun Update.orderWith(ordering: Ordering): Update {
     return sortedWith(OrderingComparator(ordering))
 }
 
@@ -51,11 +54,20 @@ object Day5 {
 
     private fun parseUpdatePagesLines(lines: List<String>): List<Update> {
         return lines
-            .map { it.split(',').map { it.toInt() }}
+            .map { it.split(',').map { it.toInt() } }
     }
 
     fun part1(input: String): Int {
         val (ordering, updates) = parse(input)
         return updates.filter { it.isOrdered(ordering) }.map { it.middlePage() }.sum()
+    }
+
+    fun part2(input: String): Int {
+        val (ordering, updates) = parse(input)
+        return updates
+            .map { it to it.orderWith(ordering) }
+            .filter { it.first != it.second }
+            .map { it.second.middlePage() }
+            .sum()
     }
 }
