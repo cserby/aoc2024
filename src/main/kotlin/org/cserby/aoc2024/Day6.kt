@@ -1,10 +1,5 @@
 package org.cserby.aoc2024
 
-import org.cserby.aoc2024.Direction.DOWN
-import org.cserby.aoc2024.Direction.LEFT
-import org.cserby.aoc2024.Direction.RIGHT
-import org.cserby.aoc2024.Direction.UP
-
 enum class Field(fld: Char) {
     EMPTY('.'),
     OBSTACLE('#');
@@ -45,19 +40,19 @@ enum class Direction(dir: Char) {
 data class GuardPosition(val position: Position, val direction: Direction) {
     fun step(): GuardPosition {
         return when(direction) {
-            UP -> copy(position = position.copy(first = position.first - 1))
-            RIGHT -> copy(position = position.copy(second = position.second + 1))
-            DOWN -> copy(position = position.copy(first = position.first + 1))
-            LEFT -> copy(position = position.copy(second = position.second - 1))
+            Direction.UP -> copy(position = position.copy(first = position.first - 1))
+            Direction.RIGHT -> copy(position = position.copy(second = position.second + 1))
+            Direction.DOWN -> copy(position = position.copy(first = position.first + 1))
+            Direction.LEFT -> copy(position = position.copy(second = position.second - 1))
         }
     }
 
     fun turnRight(): GuardPosition {
         return copy(direction = when(direction) {
-            UP -> RIGHT
-            RIGHT -> DOWN
-            DOWN -> LEFT
-            LEFT -> UP
+            Direction.UP -> Direction.RIGHT
+            Direction.RIGHT -> Direction.DOWN
+            Direction.DOWN -> Direction.LEFT
+            Direction.LEFT -> Direction.UP
         })
     }
 }
@@ -137,11 +132,17 @@ object Day6 {
 
     fun part2(input: String): Int {
         val (maze, startingGuardState) = parse(input)
-        return startingGuardState
+        val originalRoute = startingGuardState
             .steps(maze)
-            .map { guardState ->
+            .last()
+            .visited
+            .map { it.position }
+            .toSet()
+
+        return originalRoute
+            .map{ routePoint ->
                 runCatching {
-                    guardState.steps(maze.addBlock(guardState.guardPosition.step().position)).last()
+                    startingGuardState.steps(maze.addBlock(routePoint)).last()
                     return@runCatching false
                 }.recoverCatching {
                     return@recoverCatching when(it) {
