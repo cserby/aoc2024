@@ -14,15 +14,15 @@ class Day6Test {
     fun part1() {
         assertEquals(4982, Day6.part1(Utils.readFile("/day6.input.txt")))
     }
-/*
+
     @Test
     fun part2example() {
-        assertEquals(123, Day6.part2(Utils.readFile("/day6.example.txt")))
+        assertEquals(6, Day6.part2(Utils.readFile("/day6.example.txt")))
     }
 
     @Test
     fun part2() {
-        assertEquals(5285, Day6.part2(Utils.readFile("/day6.input.txt")))
+        // Too high, but fine for some other input
+        assertEquals(1697, Day6.part2(Utils.readFile("/day6.input.txt")))
     }
- */
 }

@@ -4,7 +4,6 @@ import org.cserby.aoc2024.Direction.DOWN
 import org.cserby.aoc2024.Direction.LEFT
 import org.cserby.aoc2024.Direction.RIGHT
 import org.cserby.aoc2024.Direction.UP
-import kotlin.jvm.Throws
 
 enum class Field(fld: Char) {
     EMPTY('.'),
@@ -63,23 +62,55 @@ data class GuardPosition(val position: Position, val direction: Direction) {
     }
 }
 
-data class Situation(val maze: Maze, val guardPosition: GuardPosition, val visited: Set<Position>)
+data class GuardState(val guardPosition: GuardPosition, val visited: Set<GuardPosition>)
 
 fun Maze.fieldAt(position: Position): Field {
-    return get(position.first).get(position.second)
+    return get(position.first)[position.second]
 }
 
-@Throws(IndexOutOfBoundsException::class)
-fun Situation.next(): Situation {
+class BeenHereException(guardState: GuardState, nextGuardPosition: GuardPosition):
+    Exception("Already been at $nextGuardPosition in $guardState")
+
+tailrec fun GuardState.next(maze: Maze): GuardState {
     val nextGuardPosition = guardPosition.step()
+
+    if (visited.contains(nextGuardPosition)) throw BeenHereException(this, nextGuardPosition)
+
     if (maze.fieldAt(nextGuardPosition.position) == Field.OBSTACLE) {
-        return copy(guardPosition = guardPosition.turnRight()).next()
+        val positionAfterTurn = guardPosition.turnRight()
+        return copy(guardPosition = positionAfterTurn, visited = visited + positionAfterTurn).next(maze)
     }
-    return copy(guardPosition = nextGuardPosition, visited = visited + nextGuardPosition.position)
+
+    return copy(guardPosition = nextGuardPosition, visited = visited + nextGuardPosition)
+}
+
+class AlreadyBlockException(position: Position): Exception("$position is already a block")
+
+fun Maze.addBlock(position: Position): Maze {
+    return mapIndexed { x, line ->
+        if (x != position.first)
+            line else
+                line.mapIndexed { y, fld ->
+                    if (y != position.second)
+                        fld else
+                            Field.OBSTACLE }
+    }
+}
+
+fun GuardState.steps(maze: Maze): Sequence<GuardState> = sequence {
+    var guardState = this@steps
+    while (true) {
+        try {
+            guardState = guardState.next(maze)
+            yield(guardState)
+        } catch (_: IndexOutOfBoundsException) {
+            return@sequence
+        }
+    }
 }
 
 object Day6 {
-    private fun parse(input: String): Situation {
+    private fun parse(input: String): Pair<Maze, GuardState> {
         var position: GuardPosition? = null
         val maze = input.lines()
             .mapIndexed { x, line ->
@@ -96,23 +127,33 @@ object Day6 {
                         }.getOrThrow()
                     }
             }
-        return Situation(maze, position!!, setOf(position.position))
-    }
-
-    private fun steps(start: Situation): Sequence<Situation> = sequence {
-        var situation = start
-        while (true) {
-            try {
-                situation = situation.next()
-                yield(situation)
-            } catch (_: IndexOutOfBoundsException) {
-                return@sequence
-            }
-        }
+        return maze to GuardState(position!!, setOf(position))
     }
 
     fun part1(input: String): Int {
-        val start = parse(input)
-        return steps(start).last().visited.size
+        val (maze, situation) = parse(input)
+        return situation.steps(maze).last().visited.map { it.position }.toSet().size
+    }
+
+    fun part2(input: String): Int {
+        val (maze, startingGuardState) = parse(input)
+        return startingGuardState
+            .steps(maze)
+            .map { guardState ->
+                runCatching {
+                    guardState.steps(maze.addBlock(guardState.guardPosition.step().position)).last()
+                    return@runCatching false
+                }.recoverCatching {
+                    return@recoverCatching when(it) {
+                        is BeenHereException -> true
+                        is IndexOutOfBoundsException -> false
+                        is AlreadyBlockException -> false
+                        is NoSuchElementException -> false
+                        else -> throw it
+                    }
+                }.getOrThrow()
+            }
+            .filter { it }
+            .count()
     }
 }
