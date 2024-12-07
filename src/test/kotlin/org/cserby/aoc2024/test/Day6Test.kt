@@ -22,7 +22,6 @@ class Day6Test {
 
     @Test
     fun part2() {
-        // Too high, but fine for some other input
-        assertEquals(1697, Day6.part2(Utils.readFile("/day6.input.txt")))
+        assertEquals(1663, Day6.part2(Utils.readFile("/day6.input.txt")))
     }
 }
