@@ -2,11 +2,12 @@ package org.cserby.aoc2024
 
 enum class Field(fld: Char) {
     EMPTY('.'),
-    OBSTACLE('#');
+    OBSTACLE('#'),
+    ;
 
     companion object {
         fun fromChar(dir: Char): Field {
-            return when(dir) {
+            return when (dir) {
                 '.' -> EMPTY
                 '#' -> OBSTACLE
                 else -> throw IllegalArgumentException("'$dir' is not a Field")
@@ -22,11 +23,12 @@ enum class Direction(dir: Char) {
     UP('^'),
     RIGHT('>'),
     DOWN('v'),
-    LEFT('<');
+    LEFT('<'),
+    ;
 
     companion object {
         fun fromChar(dir: Char): Direction {
-            return when(dir) {
+            return when (dir) {
                 '^' -> UP
                 '>' -> RIGHT
                 'v' -> DOWN
@@ -39,7 +41,7 @@ enum class Direction(dir: Char) {
 
 data class GuardPosition(val position: Position, val direction: Direction) {
     fun step(): GuardPosition {
-        return when(direction) {
+        return when (direction) {
             Direction.UP -> copy(position = position.copy(first = position.first - 1))
             Direction.RIGHT -> copy(position = position.copy(second = position.second + 1))
             Direction.DOWN -> copy(position = position.copy(first = position.first + 1))
@@ -48,12 +50,15 @@ data class GuardPosition(val position: Position, val direction: Direction) {
     }
 
     fun turnRight(): GuardPosition {
-        return copy(direction = when(direction) {
-            Direction.UP -> Direction.RIGHT
-            Direction.RIGHT -> Direction.DOWN
-            Direction.DOWN -> Direction.LEFT
-            Direction.LEFT -> Direction.UP
-        })
+        return copy(
+            direction =
+                when (direction) {
+                    Direction.UP -> Direction.RIGHT
+                    Direction.RIGHT -> Direction.DOWN
+                    Direction.DOWN -> Direction.LEFT
+                    Direction.LEFT -> Direction.UP
+                },
+        )
     }
 }
 
@@ -63,7 +68,7 @@ fun Maze.fieldAt(position: Position): Field {
     return get(position.first)[position.second]
 }
 
-class BeenHereException(guardState: GuardState, nextGuardPosition: GuardPosition):
+class BeenHereException(guardState: GuardState, nextGuardPosition: GuardPosition) :
     Exception("Already been at $nextGuardPosition in $guardState")
 
 tailrec fun GuardState.next(maze: Maze): GuardState {
@@ -79,49 +84,56 @@ tailrec fun GuardState.next(maze: Maze): GuardState {
     return copy(guardPosition = nextGuardPosition, visited = visited + nextGuardPosition)
 }
 
-class AlreadyBlockException(position: Position): Exception("$position is already a block")
+class AlreadyBlockException(position: Position) : Exception("$position is already a block")
 
 fun Maze.addBlock(position: Position): Maze {
     return mapIndexed { x, line ->
-        if (x != position.first)
-            line else
-                line.mapIndexed { y, fld ->
-                    if (y != position.second)
-                        fld else
-                            Field.OBSTACLE }
-    }
-}
-
-fun GuardState.steps(maze: Maze): Sequence<GuardState> = sequence {
-    var guardState = this@steps
-    while (true) {
-        try {
-            guardState = guardState.next(maze)
-            yield(guardState)
-        } catch (_: IndexOutOfBoundsException) {
-            return@sequence
+        if (x != position.first) {
+            line
+        } else {
+            line.mapIndexed { y, fld ->
+                if (y != position.second) {
+                    fld
+                } else {
+                    Field.OBSTACLE
+                }
+            }
         }
     }
 }
 
+fun GuardState.steps(maze: Maze): Sequence<GuardState> =
+    sequence {
+        var guardState = this@steps
+        while (true) {
+            try {
+                guardState = guardState.next(maze)
+                yield(guardState)
+            } catch (_: IndexOutOfBoundsException) {
+                return@sequence
+            }
+        }
+    }
+
 object Day6 {
     private fun parse(input: String): Pair<Maze, GuardState> {
         var position: GuardPosition? = null
-        val maze = input.lines()
-            .mapIndexed { x, line ->
-                line.toCharArray()
-                    .mapIndexed { y, fld ->
-                        runCatching { Field.fromChar(fld) }.recoverCatching { e ->
-                            when {
-                                e is IllegalArgumentException -> {
-                                    position = GuardPosition(x to y, Direction.fromChar(fld))
-                                    return@recoverCatching Field.EMPTY
+        val maze =
+            input.lines()
+                .mapIndexed { x, line ->
+                    line.toCharArray()
+                        .mapIndexed { y, fld ->
+                            runCatching { Field.fromChar(fld) }.recoverCatching { e ->
+                                when {
+                                    e is IllegalArgumentException -> {
+                                        position = GuardPosition(x to y, Direction.fromChar(fld))
+                                        return@recoverCatching Field.EMPTY
+                                    }
+                                    else -> throw e
                                 }
-                                else -> throw e
-                            }
-                        }.getOrThrow()
-                    }
-            }
+                            }.getOrThrow()
+                        }
+                }
         return maze to GuardState(position!!, setOf(position))
     }
 
@@ -132,20 +144,21 @@ object Day6 {
 
     fun part2(input: String): Int {
         val (maze, startingGuardState) = parse(input)
-        val originalRoute = startingGuardState
-            .steps(maze)
-            .last()
-            .visited
-            .map { it.position }
-            .toSet()
+        val originalRoute =
+            startingGuardState
+                .steps(maze)
+                .last()
+                .visited
+                .map { it.position }
+                .toSet()
 
         return originalRoute
-            .map{ routePoint ->
+            .map { routePoint ->
                 runCatching {
                     startingGuardState.steps(maze.addBlock(routePoint)).last()
                     return@runCatching false
                 }.recoverCatching {
-                    return@recoverCatching when(it) {
+                    return@recoverCatching when (it) {
                         is BeenHereException -> true
                         is IndexOutOfBoundsException -> false
                         is AlreadyBlockException -> false
