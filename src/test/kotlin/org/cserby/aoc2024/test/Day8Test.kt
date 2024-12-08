@@ -26,12 +26,17 @@ class Day8Test {
     }
 
     @Test
+    fun part2example3() {
+        assertEquals(9, Day8.part2(Utils.readFile("/day8.example3.txt")))
+    }
+
+    @Test
     fun part2example() {
-        assertEquals(53, Day8.part2(Utils.readFile("/day8.example.txt")))
+        assertEquals(34, Day8.part2(Utils.readFile("/day8.example.txt")))
     }
 
     @Test
     fun part2() {
-        assertEquals(53, Day8.part2(Utils.readFile("/day8.input.txt")))
+        assertEquals(1134, Day8.part2(Utils.readFile("/day8.input.txt")))
     }
 }
