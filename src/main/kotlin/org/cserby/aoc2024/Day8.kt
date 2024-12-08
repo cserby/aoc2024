@@ -50,7 +50,44 @@ object Day8 {
             .count()
     }
 
+    private fun antinodeLine(
+        a1: Point,
+        a2: Point,
+        lines: Int,
+        cols: Int,
+    ): Sequence<Point> =
+        sequence {
+            val (x1, y1) = a1
+            val (x2, y2) = a2
+
+            if (x1 == x2) {
+                for (y in 0..<cols) yield(x1 to y)
+            } else {
+                for (x in 0..<lines) {
+                    val z = (y2 - y1) * x + y1 * (x2 - x1) - (y2 - y1) * x1
+                    if (z % (x2 - x1) == 0) {
+                        val y = z / (x2 - x1)
+                        if (y >= 0 && y < cols) yield(x to y)
+                    }
+                }
+            }
+        }
+
     fun part2(input: String): Int {
-        return 53
+        val lineCount = input.lines().size
+        val colCount = input.lines()[0].toCharArray().size
+
+        val antinodes =
+            parse(input).flatMap { (_, antennaList) ->
+                antennaList.pairs().fold(emptySet<Point>()) { prev, (a1, a2) ->
+                    prev + antinodeLine(a1, a2, lineCount, colCount)
+                }
+            }.fold(emptySet<Point>()) { prev, curr -> prev + curr }
+                .filter { (x, y) ->
+                    x >= 0 && x < lineCount &&
+                        y >= 0 && y < colCount
+                }
+        return antinodes
+            .count()
     }
 }
