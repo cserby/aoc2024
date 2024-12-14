@@ -1,5 +1,9 @@
 package org.cserby.aoc2024
 
+import java.io.OutputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
+
 typealias FieldBounds = Pair<Int, Int>
 
 data class Robot(
@@ -77,7 +81,45 @@ object Day14 {
             .fold(1) { acc, (quadrant, robotCount) -> if (quadrant == null) acc else acc * robotCount }
     }
 
+    private fun printField(
+        robotPositions: Set<Pair<Int, Int>>,
+        fieldBounds: FieldBounds,
+    ): String {
+        return (0..<fieldBounds.first).map { x ->
+            (0..<fieldBounds.second).map { y ->
+                if (robotPositions.contains(x to y)) "#" else "."
+            }.joinToString("")
+        }.joinToString("\n")
+    }
+
+    private fun zippedLength(clear: String): Int {
+        val lengthOutputStream =
+            object : OutputStream() {
+                var length = 0
+
+                override fun write(p0: Int) {
+                    length++
+                }
+            }
+
+        ZipOutputStream(lengthOutputStream).use { zos ->
+            zos.putNextEntry(ZipEntry(""))
+            zos.write(clear.toByteArray())
+            zos.closeEntry()
+        }
+
+        return lengthOutputStream.length
+    }
+
     fun part2(input: String): Int {
-        return 54
+        var robots = parse(input)
+        val fieldBounds = 101 to 103
+        return generateSequence(1) { it + 1 }.map { i ->
+            val fld = printField(robots.map { it.move(i, fieldBounds) }.toSet(), fieldBounds)
+            i to (fld to zippedLength(fld))
+        }.first { it.second.second < 800 }.let {
+            println(it.second.first)
+            it.first
+        }
     }
 }
