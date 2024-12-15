@@ -1,5 +1,7 @@
 package org.cserby.aoc2024
 
+import org.cserby.aoc2024.Utils.Direction
+
 enum class Field(fld: Char) {
     EMPTY('.'),
     OBSTACLE('#'),
@@ -18,26 +20,6 @@ enum class Field(fld: Char) {
 
 typealias Maze = List<List<Field>>
 typealias Position = Pair<Int, Int>
-
-enum class Direction(dir: Char) {
-    UP('^'),
-    RIGHT('>'),
-    DOWN('v'),
-    LEFT('<'),
-    ;
-
-    companion object {
-        fun fromChar(dir: Char): Direction {
-            return when (dir) {
-                '^' -> UP
-                '>' -> RIGHT
-                'v' -> DOWN
-                '<' -> LEFT
-                else -> throw IllegalArgumentException("'$dir' is not a Direction")
-            }
-        }
-    }
-}
 
 data class GuardPosition(val position: Position, val direction: Direction) {
     fun step(): GuardPosition {
