@@ -7,6 +7,8 @@ object Day15 {
         EMPTY('.'),
         BOX('O'),
         WALL('#'),
+        BOX_L('['),
+        BOX_R(']'),
     }
 
     data class Warehouse(
@@ -49,17 +51,34 @@ object Day15 {
 
         class HitWallException(point: Pair<Int, Int>) : Exception("Hit wall at <$point>")
 
-        private fun moveBox(
+        private fun move(
             point: Pair<Int, Int>,
             direction: Direction,
         ): Warehouse {
+            val cellValue = cell(point)
             val moveTo = neighborPoint(point, direction)
 
-            return when (cell(moveTo)) {
-                WarehouseField.EMPTY -> setCell(point, WarehouseField.EMPTY).setCell(moveTo, WarehouseField.BOX)
-                WarehouseField.BOX -> setCell(point, WarehouseField.EMPTY).moveBox(moveTo, direction).setCell(moveTo, WarehouseField.BOX)
-                WarehouseField.WALL -> throw HitWallException(moveTo)
-            }
+            return setCell(point, WarehouseField.EMPTY).let { wh ->
+                when (cell(moveTo)) {
+                    WarehouseField.EMPTY -> wh
+                    WarehouseField.BOX -> wh.move(moveTo, direction)
+                    WarehouseField.WALL -> throw HitWallException(moveTo)
+                    WarehouseField.BOX_L ->
+                        when (direction) {
+                            Direction.RIGHT -> wh.move(moveTo, direction)
+                            Direction.UP -> wh.move(moveTo, direction).move(neighborPoint(moveTo, Direction.RIGHT), direction)
+                            Direction.DOWN -> wh.move(moveTo, direction).move(neighborPoint(moveTo, Direction.RIGHT), direction)
+                            Direction.LEFT -> wh.move(moveTo, direction)
+                        }
+                    WarehouseField.BOX_R ->
+                        when (direction) {
+                            Direction.RIGHT -> wh.move(moveTo, direction)
+                            Direction.UP -> wh.move(moveTo, direction).move(neighborPoint(moveTo, Direction.LEFT), direction)
+                            Direction.DOWN -> wh.move(moveTo, direction).move(neighborPoint(moveTo, Direction.LEFT), direction)
+                            Direction.LEFT -> wh.move(moveTo, direction)
+                        }
+                }
+            }.setCell(moveTo, cellValue)
         }
 
         fun moveRobot(direction: Direction): Warehouse {
@@ -68,16 +87,35 @@ object Day15 {
             return runCatching {
                 return when (cell(moveTo)) {
                     WarehouseField.WALL -> throw HitWallException(moveTo)
-                    WarehouseField.EMPTY -> copy(robotPosition = moveTo)
-                    WarehouseField.BOX -> moveBox(moveTo, direction).copy(robotPosition = moveTo)
-                }
+                    WarehouseField.EMPTY -> this
+                    WarehouseField.BOX -> move(moveTo, direction)
+                    WarehouseField.BOX_R ->
+                        when (direction) {
+                            Direction.DOWN -> move(moveTo, direction).move(neighborPoint(moveTo, Direction.LEFT), direction)
+                            Direction.UP -> move(moveTo, direction).move(neighborPoint(moveTo, Direction.LEFT), direction)
+                            Direction.LEFT -> move(moveTo, direction)
+                            Direction.RIGHT -> throw Exception("Can't hit box's right side while moving right at $moveTo")
+                        }
+                    WarehouseField.BOX_L ->
+                        when (direction) {
+                            Direction.DOWN ->
+                                move(moveTo, direction).move(
+                                    neighborPoint(moveTo, Direction.RIGHT),
+                                    direction,
+                                )
+
+                            Direction.UP -> move(moveTo, direction).move(neighborPoint(moveTo, Direction.RIGHT), direction)
+                            Direction.RIGHT -> move(moveTo, direction)
+                            Direction.LEFT -> throw Exception("Can't hit box's left side while moving left at $moveTo")
+                        }
+                }.copy(robotPosition = moveTo)
             }.getOrDefault(this)
         }
 
         fun boxCoords(): List<Pair<Int, Int>> {
             return fields.flatMapIndexed { x, line ->
                 line.mapIndexed { y, fld ->
-                    if (fld == WarehouseField.BOX) x to y else null
+                    if (fld == WarehouseField.BOX || fld == WarehouseField.BOX_L) x to y else null
                 }
             }.filterNotNull()
         }
@@ -115,12 +153,36 @@ object Day15 {
                     }
                 return Warehouse(fields = warehouseFields, robotPosition = robotPos!!)
             }
+
+            fun parse2(whInput: String): Warehouse {
+                var robotPos: Position? = null
+                val warehouseFields =
+                    whInput.lines().mapIndexed { x, line ->
+                        line.toCharArray().flatMapIndexed { y, field ->
+                            when (field) {
+                                '#' -> listOf(WarehouseField.WALL, WarehouseField.WALL)
+                                'O' -> listOf(WarehouseField.BOX_L, WarehouseField.BOX_R)
+                                '@' -> {
+                                    robotPos = x to y
+                                    listOf(WarehouseField.EMPTY, WarehouseField.EMPTY)
+                                }
+
+                                '.' -> listOf(WarehouseField.EMPTY, WarehouseField.EMPTY)
+                                else -> throw Exception("Unknown warehouse field at ($x, $y): $field")
+                            }
+                        }
+                    }
+                return Warehouse(fields = warehouseFields, robotPosition = robotPos!!)
+            }
         }
     }
 
-    private fun parse(input: String): Pair<Warehouse, List<Direction>> {
+    private fun parse(
+        input: String,
+        parseWh: (String) -> Warehouse = Warehouse::parse,
+    ): Pair<Warehouse, List<Direction>> {
         return input.split("\n\n").let { (whStr, stepsStr) ->
-            return Warehouse.parse(whStr) to
+            return parseWh(whStr) to
                 stepsStr.lines().joinToString("").toCharArray()
                     .map { Direction.fromChar(it) }
         }
@@ -131,7 +193,6 @@ object Day15 {
         val eventualWh =
             robotSteps.fold(warehouse) { wh, dir ->
                 val newWh = wh.moveRobot(dir)
-                println(newWh.display())
                 newWh
             }
         return eventualWh.boxCoords().fold(0) { acc, (boxX, boxY) ->
@@ -140,6 +201,18 @@ object Day15 {
     }
 
     fun part2(input: String): Int {
-        return 5
+        val (wrhs, robotSteps) = parse(input, Warehouse::parse2)
+        val warehouse = wrhs.copy(robotPosition = wrhs.robotPosition.let { (x, y) -> x to 2 * y })
+        val eventualWh =
+            robotSteps.fold(warehouse) { wh, dir ->
+                val newWh = wh.moveRobot(dir)
+                println("Move: $dir")
+                println(newWh.display())
+                println()
+                newWh
+            }
+        return eventualWh.boxCoords().fold(0) { acc, (boxX, boxY) ->
+            acc + 100 * boxX + boxY
+        }
     }
 }
