@@ -65,16 +65,22 @@ object Day16 {
         val reindeerStartPosition: Pair<Int, Int>,
         val endPosition: Pair<Int, Int>,
     ) {
-        fun lowestCostReindeerPath(): Int {
+        fun lowestCosts(
+            from: Pair<Int, Int> = reindeerStartPosition,
+            heading: Direction = Direction.RIGHT,
+            maxCost: Int = Int.MAX_VALUE,
+        ): List<List<Pair<Int?, Direction?>>> {
             var frontier: Set<ReindeerState> =
                 setOf(
-                    ReindeerState(pos = reindeerStartPosition, heading = Direction.RIGHT, costSoFar = 0),
+                    ReindeerState(pos = from, heading = heading, costSoFar = 0),
                 )
-            var lowestCosts: MutableList<MutableList<Int?>> = fields.copy { null }
+            var lowestCosts: MutableList<MutableList<Pair<Int?, Direction?>>> = fields.copy { null to null }
 
             do {
                 val currReindeerState = frontier.take(1)[0]
                 frontier = frontier.minus(currReindeerState)
+
+                if (currReindeerState.costSoFar > (maxCost)) continue
 
                 listOf(
                     currReindeerState.moveForward(),
@@ -83,19 +89,27 @@ object Day16 {
                 ).forEach { nextReindeerState ->
                     if (fields.cell(nextReindeerState.pos) != ReindeerMazeField.WALL) {
                         if ((
-                                lowestCosts.cell(nextReindeerState.pos)
+                                lowestCosts.cell(nextReindeerState.pos).first
                                     ?: Integer.MAX_VALUE
                             ) > nextReindeerState.costSoFar
                         ) {
                             lowestCosts[nextReindeerState.pos.first][nextReindeerState.pos.second] =
-                                nextReindeerState.costSoFar
+                                nextReindeerState.costSoFar to nextReindeerState.heading
                             frontier = frontier.plus(nextReindeerState)
                         }
                     }
                 }
             } while (frontier.isNotEmpty())
 
-            return lowestCosts[endPosition.first][endPosition.second]!!
+            return lowestCosts
+        }
+
+        fun lowestCostReindeerPath(
+            from: Pair<Int, Int> = reindeerStartPosition,
+            heading: Direction = Direction.RIGHT,
+            maxCost: Int = Int.MAX_VALUE,
+        ): Int? {
+            return lowestCosts(from, heading, maxCost)[endPosition.first][endPosition.second].first
         }
 
         fun display(reindeerPosition: Pair<Int, Int>): String {
@@ -140,10 +154,27 @@ object Day16 {
     }
 
     fun part1(input: String): Int {
-        return ReindeerMaze.parse(input).lowestCostReindeerPath()
+        return ReindeerMaze.parse(input).lowestCostReindeerPath()!!
     }
 
     fun part2(input: String): Int {
-        return 9
+        val maze = ReindeerMaze.parse(input)
+        val lowestCosts = maze.lowestCosts()
+        val lowestPathCost = lowestCosts[maze.endPosition.first][maze.endPosition.second].first!!
+        val pathCosts =
+            lowestCosts.mapIndexed { x, row ->
+                row.mapIndexed { y, (costHere, direction) ->
+                    if (costHere == null) {
+                        null
+                    } else if (costHere > lowestPathCost) {
+                        null
+                    } else {
+                        maze.lowestCostReindeerPath(x to y, direction!!, lowestPathCost).let { costFromHere ->
+                            if (costFromHere == null) null else costHere + costFromHere
+                        }
+                    }
+                }
+            }
+        return pathCosts.flatten().count { it == lowestPathCost } + 2
     }
 }
