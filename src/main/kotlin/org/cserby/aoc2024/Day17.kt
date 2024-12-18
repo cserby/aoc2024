@@ -12,7 +12,7 @@ object Day17 {
         val registerC: Long,
         val program: List<Int>,
         val instructionPointer: Int,
-        val output: List<Int>,
+        val output: String,
     ) {
         private fun comboOperand(): Long {
             val operand = program[instructionPointer + 1]
@@ -72,7 +72,7 @@ object Day17 {
 
         private fun out(): Computer {
             return copy(
-                output = output + comboOperand().mod(8),
+                output = output + (if (output == "") "" else ",") + comboOperand().mod(8),
                 instructionPointer = instructionPointer + 2,
             )
         }
@@ -85,7 +85,7 @@ object Day17 {
             return adv { result, comp -> comp.copy(registerC = result) }
         }
 
-        fun step(): Computer {
+        private fun step(): Computer {
             return runCatching {
                 val opcode = program[instructionPointer]
                 return when (opcode) {
@@ -119,6 +119,9 @@ object Day17 {
                     }
                 }
             }
+
+        fun stepsWhileProgramMatches(originalProgram: String): Sequence<Computer> =
+            steps().take(1000000).takeWhile { comp -> originalProgram.startsWith(comp.output) }
     }
 
     private fun parse(input: String): Computer {
@@ -129,12 +132,49 @@ object Day17 {
                 registerC = lines[2].substringAfter("Register C: ").toLong(),
                 program = lines[4].substringAfter("Program: ").split(",").map { it.toInt() },
                 instructionPointer = 0,
-                output = emptyList(),
+                output = "",
             )
         }
     }
 
     fun part1(input: String): String {
-        return parse(input).steps().last().output.joinToString(",")
+        return parse(input).steps().last().output
+    }
+
+    fun computer2(startA: Long): List<Int> {
+        var registerA = startA
+        var registerB = 0
+        var registerC = 0
+        var output = emptyList<Int>()
+
+        do {
+            registerB = registerA.mod(8)
+            registerB = registerB.xor(3)
+            registerC = registerA.shr(registerB).mod(8)
+            registerA = registerA.shr(3)
+            registerB = registerB.xor(registerC)
+            registerB = registerB.xor(5)
+            output = output + registerB
+        } while (registerA != 0L)
+
+        return output
+    }
+
+    private fun findNextA(
+        startA: Long,
+        program: List<Int>,
+    ): Long {
+        return generateSequence(0) { it + 1 }.take(8).map {
+            val newA = startA.shl(3).xor(it.toLong())
+            if (computer2(newA) == program) newA else null
+        }.filterNotNull().first()
+    }
+
+    fun part2(input: String): Long {
+        val originalProgram = parse(input).program
+
+        return (originalProgram.size - 1).downTo(0).fold(0L) { acc, i ->
+            findNextA(acc, originalProgram.subList(i, originalProgram.size))
+        }
     }
 }
