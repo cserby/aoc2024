@@ -160,21 +160,28 @@ object Day17 {
         return output
     }
 
-    private fun findNextA(
+    private fun findNextARec(
         startA: Long,
         program: List<Int>,
-    ): Long {
-        return generateSequence(0) { it + 1 }.take(8).map {
-            val newA = startA.shl(3) + it.toLong()
-            if (computer2(newA) == program) newA else null
-        }.filterNotNull().first()
+        programSoFar: List<Int>,
+    ): Long? {
+        if (program == programSoFar) return startA
+        val next = program[programSoFar.size]
+        val targetProgram = (programSoFar + next)
+        for (i in 0..7) {
+            val newA = startA.shl(3) + i.toLong()
+            if (computer2(newA) == targetProgram.reversed()) {
+                println("$newA produces $targetProgram")
+                val res = findNextARec(newA, program, targetProgram)
+                if (res != null) return res
+            }
+        }
+        return null
     }
 
     fun part2(input: String): Long {
         val originalProgram = parse(input).program
 
-        return (originalProgram.size - 1).downTo(0).fold(0L) { acc, i ->
-            findNextA(acc, originalProgram.subList(i, originalProgram.size))
-        }
+        return findNextARec(0L, originalProgram.reversed(), emptyList())!!
     }
 }
