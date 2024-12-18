@@ -165,7 +165,7 @@ object Day17 {
         program: List<Int>,
     ): Long {
         return generateSequence(0) { it + 1 }.take(8).map {
-            val newA = startA.shl(3).xor(it.toLong())
+            val newA = startA.shl(3) + it.toLong()
             if (computer2(newA) == program) newA else null
         }.filterNotNull().first()
     }
