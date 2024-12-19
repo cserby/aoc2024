@@ -27,6 +27,6 @@ class Day17Test {
 
     @Test
     fun part2() {
-        assertEquals(5, Day17.part2(Utils.readFile("/day17.input.txt")))
+        assertEquals(236581108670061L, Day17.part2(Utils.readFile("/day17.input.txt")))
     }
 }
