@@ -26,4 +26,30 @@ object Day19 {
 
         return designs.count { possible(it, towels) }
     }
+
+    class MemoizedHowManyPossible(val towels: List<String>) {
+        val memo: HashMap<String, Long> = HashMap()
+
+        fun howManyPossible(design: String): Long {
+            val memoed = memo.get(design)
+            if (memoed != null) return memoed
+            val calculated = howManyPossibleInternal(design)
+            memo[design] = calculated
+            return calculated
+        }
+
+        private fun howManyPossibleInternal(design: String): Long {
+            if (design.isEmpty()) return 1L
+            return towels.filter { design.startsWith(it) }.fold(0L) {
+                    acc, towel ->
+                acc + howManyPossible(design.substringAfter(towel))
+            }
+        }
+    }
+
+    fun part2(input: String): Long {
+        val (designs, towels) = parse(input)
+
+        return designs.fold(0L) { acc, design -> acc + MemoizedHowManyPossible(towels).howManyPossible(design) }
+    }
 }
