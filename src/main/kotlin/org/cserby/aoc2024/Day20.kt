@@ -2,6 +2,7 @@ package org.cserby.aoc2024
 
 import org.cserby.aoc2024.day12.cell
 import org.cserby.aoc2024.day12.neighbors
+import kotlin.math.abs
 
 object Day20 {
     enum class ProgramMazeField(val chr: Char) {
@@ -62,25 +63,6 @@ object Day20 {
             return shortestPath.reversed()
         }
 
-        fun cheatAt(
-            pos: Pair<Int, Int>,
-            path: List<FieldCost>,
-        ): List<Int> {
-            val pathPoints = path.map { it.field to it.cost }.toMap()
-
-            val possibleCheatEnds =
-                listOf(0 to 2, 0 to -2, 2 to 0, -2 to 0)
-                    .map { pos.first + it.first to pos.second + it.second }
-                    .filter { pathPoints.keys.contains(it) }
-
-            val possibleCheatsSavings =
-                possibleCheatEnds
-                    .map { pathPoints[it]!! - pathPoints[pos]!! - 2 }
-                    .filter { it > 0 }
-
-            return possibleCheatsSavings
-        }
-
         companion object {
             fun parse(input: String): ProgramMaze {
                 var start: Pair<Int, Int>? = null
@@ -110,10 +92,60 @@ object Day20 {
         }
     }
 
+    private fun cheatAt(
+        pos: Pair<Int, Int>,
+        path: List<FieldCost>,
+    ): List<Int> {
+        val pathPoints = path.map { it.field to it.cost }.toMap()
+
+        val possibleCheatEnds =
+            listOf(0 to 2, 0 to -2, 2 to 0, -2 to 0)
+                .map { pos.first + it.first to pos.second + it.second }
+                .filter { pathPoints.keys.contains(it) }
+
+        val possibleCheatsSavings =
+            possibleCheatEnds
+                .map { pathPoints[it]!! - pathPoints[pos]!! - 2 }
+                .filter { it > 0 }
+
+        return possibleCheatsSavings
+    }
+
     fun part1(input: String): Int {
         val maze = ProgramMaze.parse(input)
         val shortestPathWithoutCheating = maze.shortestPathWithoutCheating()
-        val possibleCheats = shortestPathWithoutCheating.map { it.field to maze.cheatAt(it.field, shortestPathWithoutCheating) }
+        val possibleCheats = shortestPathWithoutCheating.map { it.field to cheatAt(it.field, shortestPathWithoutCheating) }
         return possibleCheats.flatMap { it.second }.count { it >= 100 }
+    }
+
+    fun godMode(
+        pos: Pair<Int, Int>,
+        pathPoints: Map<Pair<Int, Int>, Int>,
+    ): List<Pair<Pair<Int, Int>, Int>> {
+        val possibleCheats =
+            pathPoints.keys.map {
+                val distance = abs(it.first - pos.first) + abs(it.second - pos.second)
+                it to distance
+            }.filter { (_, distance) ->
+                distance <= 20
+            }.map { (possibleCheatEnd, distance) ->
+                val costSavings = pathPoints[possibleCheatEnd]!! - pathPoints[pos]!! - distance
+                possibleCheatEnd to costSavings
+            }.filter { (_, costSavings) ->
+                costSavings > 0
+            }
+
+        return possibleCheats
+    }
+
+    fun part2(input: String): Int {
+        val maze = ProgramMaze.parse(input)
+        val shortestPathWithoutCheating = maze.shortestPathWithoutCheating()
+        val pathPoints =
+            shortestPathWithoutCheating.map { it.field to it.cost }.toMap().plus(
+                maze.end to shortestPathWithoutCheating.size + 1,
+            )
+        val possibleCheats = shortestPathWithoutCheating.map { it.field to godMode(it.field, pathPoints) }
+        return possibleCheats.map { it.second }.flatMap { it }.count { it.second >= 100 }
     }
 }
