@@ -27,4 +27,34 @@ object Day22 {
             .map { it.elementAt(2000) }
             .fold(0) { acc, secret -> acc + secret }
     }
+
+    fun part2(input: String): Int {
+        val patternGains =
+            input.lines()
+                .map { line ->
+                    val prices =
+                        Buyer(line.toLong())
+                            .secretNumbers()
+                            .map { it.mod(10) }
+                            .take(2001)
+                            .toList()
+                    val priceChangePatterns =
+                        prices
+                            .zipWithNext()
+                            .map { it.second - it.first }
+                            .windowed(4)
+                    val buyerPatternGains =
+                        priceChangePatterns
+                            .foldIndexed(emptyMap<List<Int>, Int>()) { patternIdx, acc, pattern ->
+                                if (acc.keys.contains(pattern)) acc else acc.plus(pattern to prices[patternIdx + 4])
+                            }
+                    buyerPatternGains
+                }.fold(emptyMap<List<Int>, Int>()) { acc, buyerPatternGains ->
+                    (acc.keys + buyerPatternGains.keys).associateWith { key ->
+                        (acc[key] ?: 0) + (buyerPatternGains[key] ?: 0)
+                    }
+                }
+
+        return patternGains.values.max()
+    }
 }
