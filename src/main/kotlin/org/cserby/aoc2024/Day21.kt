@@ -1,5 +1,7 @@
 package org.cserby.aoc2024
 
+import kotlin.collections.map
+
 object Day21 {
     /*
 +---+---+---+
@@ -18,7 +20,6 @@ object Day21 {
 | < | v | > |
 +---+---+---+
      */
-
     val KeypadPositions =
         mapOf<Char, Pair<Int, Int>>(
             '7' to (0 to 0),
@@ -43,68 +44,85 @@ object Day21 {
             '>' to (1 to 2),
         )
 
-    fun keypadSteps(keys: List<Char>): Sequence<Char> =
+    fun keypadSteps(
+        state: Char,
+        to: Char,
+    ): Set<String> {
+        val (stateX, stateY) = KeypadPositions[state]!!
+        val (toX, toY) = KeypadPositions[to]!!
+
+        val xAdjust = (if (toX <= stateX) (toX..<stateX).map { '^' } else (stateX..<toX).map { 'v' }).joinToString("")
+        val yAdjust = (if (toY <= stateY) (toY..<stateY).map { '<' } else (stateY..<toY).map { '>' }).joinToString("")
+
+        if (stateX == 3 && toY == 0) return emptySet<String>().plus("$xAdjust${yAdjust}A")
+        if (stateY == 0 && toX == 3) return emptySet<String>().plus("$yAdjust${xAdjust}A")
+        return setOf("$yAdjust${xAdjust}A", "$xAdjust${yAdjust}A")
+    }
+
+    fun directionalSteps(
+        state: Char,
+        to: Char,
+    ): Set<String> {
+        val (stateX, stateY) = DirectionalPositions[state]!!
+        val (toX, toY) = DirectionalPositions[to]!!
+
+        val xAdjust = (if (toX <= stateX) (toX..<stateX).map { '^' } else (stateX..<toX).map { 'v' }).joinToString("")
+        val yAdjust = (if (toY <= stateY) (toY..<stateY).map { '<' } else (stateY..<toY).map { '>' }).joinToString("")
+
+        if (stateX == 0 && toY == 0) return emptySet<String>().plus("$xAdjust${yAdjust}A")
+        if (stateY == 0 && toX == 0) return emptySet<String>().plus("$yAdjust${xAdjust}A")
+        return setOf("$yAdjust${xAdjust}A", "$xAdjust${yAdjust}A")
+    }
+
+    fun firstRobotSteps(keycode: String): Sequence<Char> =
         sequence {
-            var state = 'A'
-            for (key in keys) {
-                val (currX, currY) = KeypadPositions[state]!!
-                val (toX, toY) = KeypadPositions[key]!!
+            var keypadState = 'A'
+            var directionalState = 'A'
 
-                if (toX <= currX) {
-                    (toX..<currX).forEach { yield('^') }
-                    if (toY <= currY) {
-                        (toY..<currY).forEach { yield('<') }
-                    } else {
-                        (currY..<toY).forEach { yield('>') }
-                    }
-                } else {
-                    if (toY <= currY) {
-                        (toY..<currY).forEach { yield('<') }
-                    } else {
-                        (currY..<toY).forEach { yield('>') }
-                    }
-                    (currX..<toX).forEach { yield('v') }
-                }
-
-                yield('A')
-                state = key
+            for (key in keycode.toList()) {
+                val possibleSteps = keypadSteps(keypadState, key)
+                val preferredSteps =
+                    runCatching {
+                        possibleSteps.first {
+                            it.startsWith(
+                                directionalState,
+                            )
+                        }
+                    }.getOrElse { possibleSteps.take(1)[0] }
+                yieldAll(preferredSteps.toList())
+                keypadState = key
+                directionalState = preferredSteps.toList().last()
             }
         }
 
-    fun directionalSteps(steps: Sequence<Char>): Sequence<Char> =
+    fun subsequentRobotSteps(nextRobotSteps: Sequence<Char>): Sequence<Char> =
         sequence {
-            var state = 'A'
+            var directionalState = 'A'
 
-            steps.forEach { step ->
-                val (currX, currY) = DirectionalPositions[state]!!
-                val (toX, toY) = DirectionalPositions[step]!!
-
-                if (toX <= currX) {
-                    if (toY <= currY) {
-                        (toY..<currY).forEach { yield('<') }
-                    } else {
-                        (currY..<toY).forEach { yield('>') }
-                    }
-                    (toX..<currX).forEach { yield('^') }
-                } else {
-                    (currX..<toX).forEach { yield('v') }
-                    if (toY <= currY) {
-                        (toY..<currY).forEach { yield('<') }
-                    } else {
-                        (currY..<toY).forEach { yield('>') }
-                    }
-                }
-
-                yield('A')
-                state = step
+            nextRobotSteps.forEach { nextRobotStep ->
+                val possibleSteps = directionalSteps(directionalState, nextRobotStep)
+                val preferredSteps =
+                    runCatching {
+                        possibleSteps.first {
+                            it.startsWith(
+                                directionalState,
+                            )
+                        }
+                    }.getOrElse { possibleSteps.take(1)[0] }
+                yieldAll(preferredSteps.toList())
+                directionalState = nextRobotStep
             }
         }
 
     fun part1(input: String): Int {
-        return input.lines().fold(0) { acc, line ->
-            val seqLen = directionalSteps(directionalSteps(keypadSteps(line.toCharArray().toList()))).toList().size
-            val numVal = line.substring(0, line.length - 1).toInt()
-            acc + numVal * seqLen
-        }
+        return input.lines()
+            .map { line -> line to firstRobotSteps(line) }
+            .map { (line, frs) -> line to subsequentRobotSteps(frs) }
+            .map { (line, srs) -> line to subsequentRobotSteps(srs) }
+            .fold(0) { acc, (line, srs) ->
+                val seqLen = srs.toList().size
+                val numVal = line.substring(0, line.length - 1).toInt()
+                acc + numVal * seqLen
+            }
     }
 }
