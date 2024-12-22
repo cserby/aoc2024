@@ -74,45 +74,49 @@ object Day21 {
         return setOf("$yAdjust${xAdjust}A", "$xAdjust${yAdjust}A")
     }
 
-    fun firstRobotSteps(keycode: String): Sequence<Char> =
-        sequence {
-            var keypadState = 'A'
-            var directionalState = 'A'
+    fun firstRobotSteps(keycode: String): String {
+        var keypadState = 'A'
+        var directionalState = 'A'
+        var output = ""
 
-            for (key in keycode.toList()) {
-                val possibleSteps = keypadSteps(keypadState, key)
-                val preferredSteps =
-                    runCatching {
-                        possibleSteps.first {
-                            it.startsWith(
-                                directionalState,
-                            )
-                        }
-                    }.getOrElse { possibleSteps.take(1)[0] }
-                yieldAll(preferredSteps.toList())
-                keypadState = key
-                directionalState = preferredSteps.toList().last()
-            }
+        for (key in keycode.toList()) {
+            val possibleSteps = keypadSteps(keypadState, key)
+            val preferredSteps =
+                runCatching {
+                    possibleSteps.first {
+                        it.startsWith(
+                            directionalState,
+                        )
+                    }
+                }.getOrElse { possibleSteps.take(1)[0] }
+            output += preferredSteps
+            keypadState = key
+            directionalState = preferredSteps.toList().last()
         }
 
-    fun subsequentRobotSteps(nextRobotSteps: Sequence<Char>): Sequence<Char> =
-        sequence {
-            var directionalState = 'A'
+        return output
+    }
 
-            nextRobotSteps.forEach { nextRobotStep ->
-                val possibleSteps = directionalSteps(directionalState, nextRobotStep)
-                val preferredSteps =
-                    runCatching {
-                        possibleSteps.first {
-                            it.startsWith(
-                                directionalState,
-                            )
-                        }
-                    }.getOrElse { possibleSteps.take(1)[0] }
-                yieldAll(preferredSteps.toList())
-                directionalState = nextRobotStep
-            }
+    fun subsequentRobotSteps(nextRobotSteps: String): String {
+        var directionalState = 'A'
+        var output = ""
+
+        nextRobotSteps.forEach { nextRobotStep ->
+            val possibleSteps = directionalSteps(directionalState, nextRobotStep)
+            val preferredSteps =
+                runCatching {
+                    possibleSteps.first {
+                        it.startsWith(
+                            directionalState,
+                        )
+                    }
+                }.getOrElse { possibleSteps.take(1)[0] }
+            output += preferredSteps
+            directionalState = nextRobotStep
         }
+
+        return output
+    }
 
     fun part1(input: String): Int {
         return input.lines()
@@ -120,7 +124,7 @@ object Day21 {
             .map { (line, frs) -> line to subsequentRobotSteps(frs) }
             .map { (line, srs) -> line to subsequentRobotSteps(srs) }
             .fold(0) { acc, (line, srs) ->
-                val seqLen = srs.toList().size
+                val seqLen = srs.length
                 val numVal = line.substring(0, line.length - 1).toInt()
                 acc + numVal * seqLen
             }
