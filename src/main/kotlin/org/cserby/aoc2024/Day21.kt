@@ -74,59 +74,23 @@ object Day21 {
         return setOf("$yAdjust${xAdjust}A", "$xAdjust${yAdjust}A")
     }
 
-    fun firstRobotSteps(keycode: String): String {
-        var keypadState = 'A'
-        var directionalState = 'A'
-        var output = ""
-
-        for (key in keycode.toList()) {
-            val possibleSteps = keypadSteps(keypadState, key)
-            val preferredSteps =
-                runCatching {
-                    possibleSteps.first {
-                        it.startsWith(
-                            directionalState,
-                        )
-                    }
-                }.getOrElse { possibleSteps.take(1)[0] }
-            output += preferredSteps
-            keypadState = key
-            directionalState = preferredSteps.toList().last()
-        }
-
-        return output
-    }
-
-    fun subsequentRobotSteps(nextRobotSteps: String): String {
-        var directionalState = 'A'
-        var output = ""
-
-        nextRobotSteps.forEach { nextRobotStep ->
-            val possibleSteps = directionalSteps(directionalState, nextRobotStep)
-            val preferredSteps =
-                runCatching {
-                    possibleSteps.first {
-                        it.startsWith(
-                            directionalState,
-                        )
-                    }
-                }.getOrElse { possibleSteps.take(1)[0] }
-            output += preferredSteps
-            directionalState = nextRobotStep
-        }
-
-        return output
+    fun lineCost(
+        line: String,
+        keypadStepGenerators: List<(Char, Char) -> Set<String>> =
+            listOf(Day21::keypadSteps, Day21::directionalSteps, Day21::directionalSteps),
+    ): Int {
+        if (keypadStepGenerators.isEmpty()) return line.length
+        return ("A$line").zipWithNext()
+            .map { keypadStepGenerators[0](it.first, it.second) }
+            .map { stateTransitionStepAlternatives ->
+                stateTransitionStepAlternatives.map { lineCost(it, keypadStepGenerators.drop(1)) }.min()
+            }.sum()
     }
 
     fun part1(input: String): Int {
         return input.lines()
-            .map { line -> line to firstRobotSteps(line) }
-            .map { (line, frs) -> line to subsequentRobotSteps(frs) }
-            .map { (line, srs) -> line to subsequentRobotSteps(srs) }
-            .fold(0) { acc, (line, srs) ->
-                val seqLen = srs.length
-                val numVal = line.substring(0, line.length - 1).toInt()
-                acc + numVal * seqLen
-            }
+            .map { line -> line to lineCost(line, listOf(Day21::keypadSteps, Day21::directionalSteps, Day21::directionalSteps)) }
+            .map { (line, cost) -> line.substring(0, line.length - 1).toInt() * cost }
+            .sum()
     }
 }
