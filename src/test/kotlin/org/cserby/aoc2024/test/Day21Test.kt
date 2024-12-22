@@ -7,12 +7,16 @@ import kotlin.test.assertEquals
 class Day21Test {
     @Test
     fun part1example() {
-        assertEquals(126384, Day21.part1(Utils.readFile("/day21.example.txt")))
+        assertEquals(126384L, Day21.part1(Utils.readFile("/day21.example.txt")))
     }
 
     @Test
     fun part1() {
-        // 211246 too high
-        assertEquals(126384, Day21.part1(Utils.readFile("/day21.input.txt")))
+        assertEquals(203814L, Day21.part1(Utils.readFile("/day21.input.txt")))
+    }
+
+    @Test
+    fun part2() {
+        assertEquals(248566068436630L, Day21.part2(Utils.readFile("/day21.input.txt")))
     }
 }
