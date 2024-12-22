@@ -74,22 +74,53 @@ object Day21 {
         return setOf("$yAdjust${xAdjust}A", "$xAdjust${yAdjust}A")
     }
 
-    fun lineCost(
-        line: String,
-        keypadStepGenerators: List<(Char, Char) -> Set<String>> =
-            listOf(Day21::keypadSteps, Day21::directionalSteps, Day21::directionalSteps),
-    ): Int {
-        if (keypadStepGenerators.isEmpty()) return line.length
-        return ("A$line").zipWithNext()
-            .map { keypadStepGenerators[0](it.first, it.second) }
-            .map { stateTransitionStepAlternatives ->
-                stateTransitionStepAlternatives.map { lineCost(it, keypadStepGenerators.drop(1)) }.min()
-            }.sum()
+    class MemoizedLineCosts {
+        val memo: HashMap<Pair<String, List<(Char, Char) -> Set<String>>>, Long> = HashMap()
+
+        fun lineCost(
+            line: String,
+            keypadStepGenerators: List<(Char, Char) -> Set<String>> =
+                listOf(Day21::keypadSteps, Day21::directionalSteps, Day21::directionalSteps),
+        ): Long {
+            val memoed = memo.get(line to keypadStepGenerators)
+            if (memoed != null) return memoed
+            val calculated = lineCostInternal(line, keypadStepGenerators)
+            memo[line to keypadStepGenerators] = calculated
+            return calculated
+        }
+
+        private fun lineCostInternal(
+            line: String,
+            keypadStepGenerators: List<(Char, Char) -> Set<String>> =
+                listOf(Day21::keypadSteps, Day21::directionalSteps, Day21::directionalSteps),
+        ): Long {
+            if (keypadStepGenerators.isEmpty()) return line.length.toLong()
+            return ("A$line").zipWithNext()
+                .map { keypadStepGenerators[0](it.first, it.second) }
+                .map { stateTransitionStepAlternatives ->
+                    stateTransitionStepAlternatives.map { lineCost(it, keypadStepGenerators.drop(1)) }.min()
+                }.sum()
+        }
     }
 
-    fun part1(input: String): Int {
+    fun part1(input: String): Long {
+        val mlc = MemoizedLineCosts()
         return input.lines()
-            .map { line -> line to lineCost(line, listOf(Day21::keypadSteps, Day21::directionalSteps, Day21::directionalSteps)) }
+            .map { line -> line to mlc.lineCost(line, listOf(Day21::keypadSteps, Day21::directionalSteps, Day21::directionalSteps)) }
+            .map { (line, cost) -> line.substring(0, line.length - 1).toInt() * cost }
+            .sum()
+    }
+
+    fun part2(input: String): Long {
+        val mlc = MemoizedLineCosts()
+        return input.lines()
+            .map { line ->
+                line to
+                    mlc.lineCost(
+                        line,
+                        listOf(Day21::keypadSteps) + (1..25).map { Day21::directionalSteps },
+                    )
+            }
             .map { (line, cost) -> line.substring(0, line.length - 1).toInt() * cost }
             .sum()
     }
