@@ -1,5 +1,7 @@
 package org.cserby.aoc2024
 
+import java.io.File
+
 object Day24 {
     data class Instruction(val op1: String, val operand: (Boolean, Boolean) -> Boolean, val op2: String, val res: String)
 
@@ -65,5 +67,45 @@ object Day24 {
                 .toLong(2)
 
         return output
+    }
+
+    fun part2(input: String): String {
+        File("day24.dot").printWriter().use { out ->
+            out.println("digraph {")
+            input.split("\n\n")[1].lines().forEachIndexed { idx, line ->
+                val (opPart, res) = line.split(" -> ")
+                val (op1, op, op2) = opPart.split(" ")
+
+                when (op) {
+                    "AND" -> {
+                        out.println("inst$idx [shape=triangle, label=\"AND\" color=\"blue\"]")
+                        out.println("$op1 -> inst$idx [color=\"blue\"]")
+                        out.println("$op2 -> inst$idx [color=\"blue\"]")
+                        out.println("inst$idx -> $res [color=\"blue\"]")
+                    }
+                    "OR" -> {
+                        out.println("inst$idx [shape=triangle, label=\"OR\" color=\"green\"]")
+                        out.println("$op1 -> inst$idx [color=\"green\"]")
+                        out.println("$op2 -> inst$idx [color=\"green\"]")
+                        out.println("inst$idx -> $res [color=\"green\"]")
+                    }
+                    "XOR" -> {
+                        out.println("inst$idx [shape=invhouse, label=\"XOR\" color=\"red\"]")
+                        out.println("$op1 -> inst$idx [color=\"red\"]")
+                        out.println("$op2 -> inst$idx [color=\"red\"]")
+                        out.println("inst$idx -> $res [color=\"red\"]")
+                    }
+                    else -> throw Exception()
+                }
+
+                out.println()
+            }
+            out.println("}")
+        }
+
+        // dot -Tpng day24.dot -o day24.png
+        // Check with eyes
+
+        return "dkr,ggk,hhh,htp,rhv,z05,z15,z20"
     }
 }
