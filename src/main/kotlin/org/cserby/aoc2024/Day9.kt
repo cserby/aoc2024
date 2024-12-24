@@ -1,8 +1,8 @@
 package org.cserby.aoc2024
 
-data class File(val index: Int, val size: Int)
-
 object Day9 {
+    data class File(val index: Int, val size: Int)
+
     private fun parse(input: String): Pair<List<Int>, List<Int>> {
         return input.toCharArray()
             .map { it.digitToInt() }
